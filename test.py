@@ -23,14 +23,6 @@ def get_MA(data, size):
     dataMA /= size
     return dataMA
 
-def scatter_over_under(x,y1,y2,size=10):
-    if size == -1 : size = y1
-    else: size = np.ones(y1.shape[0])*size
-    area1 = np.ma.masked_where(y1 >= y2, size)
-    area2 = np.ma.masked_where(y1 <= y2, size)
-    plt.scatter(x, y1, s=area1, marker='^')
-    plt.scatter(x, y1, s=area2, marker='o')
-
 def process_backtracking (x1,x2,ma_size):
     value = 1
     values = np.ones(len(x1))
@@ -43,24 +35,41 @@ def process_backtracking (x1,x2,ma_size):
         values[i] = value*x1[ma_size]
         
     value *= (x1[len(x1)-1]/x1[s_point]-1)*1+1
-    year_benifit = value **(1/(len(x1)/52))
+    week_benifit = value **(1/(len(x1)-40))
+    year_benifit = value **(1/((len(x1)-40)/52))
     values[s_point:] = value*x1[ma_size]
-    print(value)
-    print(year_benifit)
-    print(len(x1)/52)
-    return values,value,year_benifit
+    print(round(value,2), year_benifit)
+    return values,value,week_benifit
     
-    
+def scatter_over_under(x,y1,y2,size=10):
+    if size == -1 : size = y1
+    else: size = np.ones(y1.shape[0])*size
+    area1 = np.ma.masked_where(y1 >= y2, size)
+    area2 = np.ma.masked_where(y1 <= y2, size)
+    plt.scatter(x, y1, s=area1, marker='^')
+    plt.scatter(x, y1, s=area2, marker='o')
 
+def get_avg_value(value,size,benifit):
+    avg_values = np.arange(len(value))
+    avg_values[(avg_values-size)<=0] = 0
+    avg_values = (benifit ** avg_values) * value[size]*1
+    return avg_values
+
+size = 45
 y_values_00 = get_csv_chart('data.csv')
-#y_values_00 = y_values_00[:257]
-y_values_40 = get_MA(y_values_00, 40)
+#y_values_00 = y_values_00[:280]
+y_values_45 = get_MA(y_values_00, size)
 x_values = np.arange(y_values_00.shape[0])
 
-y_benifit,dump,dump = process_backtracking(y_values_00,y_values_40,40)
+y_benifit,dump,week_benifit = process_backtracking(
+    y_values_00,y_values_45,size)
+print(week_benifit)
+avg_values = get_avg_value(y_values_00,size,week_benifit+0.0003)
+
+
 #scatter_over_under(x_values,y_values_00,y_values_40,-1)
-plt.plot(x_values,y_values_00,label='MA1')
-plt.plot(x_values,y_values_40,label='MA40')
-plt.plot(x_values,y_benifit,label='benifit')
+plt.plot(x_values,y_values_00/avg_values,label='MA45 value/avg')
+#plt.plot(x_values,avg_values,label='MA40')
+#plt.plot(x_values,y_benifit,label='benifit')
 plt.legend()
 plt.show()
